@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Country Details API</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bootstrap-5.0.2-dist/css/bootstrap.min.css" />
+</head>
+<body>
+    <h1>REST Countries API</h1>
+    <div id="main-container">
+        <div id="flag-container">
+            <img src="" alt="" id="countryFlag">
+        </div>
+        <div id="info-container">
+            <select id="countries"></select>
+            <p>Capital: <span id="capital"></span></p>
+            <p>Region: <span id="region"></span></p>
+            <p>Sub Region: <span id="sub-region"></span></p>
+            <p>Currency: <span id="currency"></span></p>
+            <p>Country Code: <span id="country-code"></span></p>
+            <p>Population: <span id="population"></span></p>
+            <div id="map-container" style="height: 300px;"></div>
+        </div>
+    </div>
+
+    <script>
+        var countriesDropdown = document.getElementById('countries');
+        var countryFlag = document.getElementById('countryFlag');
+        var mapContainer = document.getElementById('map-container');
+        var map;
+
+        // Event listener for dropdown change
+        countriesDropdown.addEventListener('change', function() {
+            var selectedCountry = this.value;
+            if (selectedCountry !== '') {
+                fetchCountryDetails(selectedCountry);
+            }
+        });
+
+        function populateCountryDropdown() {
+            fetch('https://restcountries.com/v3.1/all')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(country => {
+                        var option = document.createElement('option');
+                        option.value = country.name.common;
+                        option.text = country.name.common;
+                        countriesDropdown.add(option);
+                    });
+
+                    // Display details of the first country
+                    fetchCountryDetails(data[0].name.common);
+                })
+                .catch(error => console.error('Error fetching countries:', error));
+        }
+
+        function fetchCountryDetails(countryName) {
+            fetch(`https://restcountries.com/v3.1/name/${countryName}`)
+                .then(response => response.json())
+                .then(data => {
+                    var country = data[0]; // Assuming the first result is the desired country
+
+                    // Update UI with country details
+                    countryFlag.src = country.flags.png;
+                    document.getElementById('capital').innerText = country.capital[0];
+                    document.getElementById('region').innerText = country.region;
+                    document.getElementById('sub-region').innerText = country.subregion;
+                    document.getElementById('country-code').innerText = country.cca3;
+                    document.getElementById('population').innerText = country.population;
+
+                    // Display currencies
+                    var currencies = country.currencies.map(currency => `${currency.name} (${currency.code})`).join(', ');
+                    document.getElementById('currency').innerText = currencies;
+
+                    // Display Google Map
+                    if (country.latlng && country.latlng.length === 2) {
+                        initMap(country.latlng[0], country.latlng[1]);
+                    } else {
+                        mapContainer.innerHTML = '<p>Map not available for this country</p>';
+                    }
+                })
+                .catch(error => console.error('Error fetching country details:', error));
+        }
+
+        function initMap(lat, lng) {
+            map = new google.maps.Map(mapContainer, {
+                center: { lat: parseFloat(lat), lng: parseFloat(lng) },
+                zoom: 5
+            });
+        }
+
+        populateCountryDropdown();
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCG_Be4j-cBQbwIxrMTfoZJwwSFO7VZRPg&callback=initMap">
+    </script>
+</body>
+</html>
